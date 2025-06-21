@@ -1,0 +1,319 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a compassionate digital well-being buddy — a friendly, non-intrusive companion who checks in with the user regularly. You remember past conversations and always respond like a thoughtful friend. \n\nWhen the user responds, gently assess their emotional tone. If they seem stressed, tired, or sad, offer kind, light suggestions like taking a short break, breathing exercise, or listening to music.\n\nIf the mood is positive or neutral, maintain light and encouraging conversation. Do not greet the user repeatedly or say “Hey!” every time. Only greet them once in the first interaction.\n\nKeep responses short, warm, and actionable. Avoid sounding robotic.\n\nThe user input is :  {{ $json.chatInput }}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        760,
+        160
+      ],
+      "id": "a63b629c-ceee-4481-be87-fea15885d3c0",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "mindcraft-gpt4o",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        700,
+        440
+      ],
+      "id": "698b8ec5-881d-4ccd-b37a-f87776b8095a",
+      "name": "Azure OpenAI Chat Model",
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "2prplOEsQJmlQ60p",
+          "name": "Azure Open AI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.SessionID }}\n{{ $json.chat }}\n\n",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1080,
+        480
+      ],
+      "id": "75b8d6f5-c80b-471c-95f9-f1a308924c14",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "={{ $json.output }}\n{{ $json.chat  }}\n{{ $json.emergency }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        0
+      ],
+      "id": "fd1fa431-7d96-404a-86fe-0114e73f0abe",
+      "name": "Discord",
+      "webhookId": "a10ad3ef-37f1-4c4c-8e89-36e1dbedc8a4",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "qdPuWtySxHSoyAmZ",
+          "name": "Discord Webhook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -420,
+        0
+      ],
+      "id": "55f9b9f7-bcf7-4dd7-a9d6-d49ac02c31c5",
+      "name": "When chat message received",
+      "webhookId": "a6a8f54f-d33a-48dd-af8e-4cdde8eb74e1"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 22
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -160,
+        320
+      ],
+      "id": "dfc9b034-cdef-429d-b96a-b6799bd63c36",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "843036f8-758d-4d3a-a381-ab9ba5381086",
+              "name": "chat",
+              "value": "Hey! Just checking in. How are you feeling right now?",
+              "type": "string"
+            },
+            {
+              "id": "0f83e049-5d0c-45d4-8e3e-4a211e190880",
+              "name": "SessionID",
+              "value": "scheduled-checkin-user",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        80,
+        320
+      ],
+      "id": "bdbcd780-dc39-4e55-90e6-4d715bf22cac",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{ $json.chatInput !== undefined }}"
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        340,
+        100
+      ],
+      "id": "05bf7b8d-7d7a-4f32-8bc0-e160825150c3",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 2,
+        "output": "={{$json.chatInput?.toLowerCase().includes(\"give up\") || \n  $json.chatInput?.toLowerCase().includes(\"hurt myself\") || \n  $json.chatInput?.toLowerCase().includes(\"can't take it\") || \n  $json.chatInput?.toLowerCase().includes(\"hopeless\")}}"
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -140,
+        -60
+      ],
+      "id": "6ba0c4fa-6818-4e22-b263-1b474e0afb36",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bd0f6db6-2d3b-460a-a73d-57fcbc592b3c",
+              "name": "emergency",
+              "value": "={{ `Hey, I’m really concerned. Please know you’re not alone. \nHere are some helpline numbers-\n1800-599-0019 (Mental Health Rehabilitation Helpline)` }}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        160,
+        -200
+      ],
+      "id": "01fabc0c-01b2-4043-bb85-f8dfc184cee2",
+      "name": "Edit Fields1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Azure OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Discord",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "91ec6159-5be0-4eb4-a545-e1d8b870cfa0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8af83dba1c3f520bcc5f58846be43f75f2230b0e36f25854fe82f5e9abc8f6f8"
+  },
+  "id": "8URLoWtdbzH4kGdB",
+  "tags": []
+}
